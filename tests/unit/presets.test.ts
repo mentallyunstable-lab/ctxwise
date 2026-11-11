@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 import {
   applyPresetToProject,
   listBuiltInPresets,
+  PRESET_ALIASES,
   renderPresetGuidanceMarkdown,
+  resolvePresetName,
 } from "../../src/presets.js";
 import { withTempDir } from "../support/temp.js";
 
@@ -60,6 +62,32 @@ describe("Community Stack Presets", () => {
           projectRoot: root,
         }),
       ).rejects.toThrow(/Unknown preset/);
+    });
+  });
+
+  describe("PRESET_ALIASES", () => {
+    const aliasEntries = Object.entries(PRESET_ALIASES);
+
+    it.each(aliasEntries)(
+      "alias %s points at built-in preset %s",
+      async (_alias, target) => {
+        const names = (await listBuiltInPresets()).map((p) => p.name);
+        expect(names).toContain(target);
+      },
+    );
+
+    it.each(aliasEntries)(
+      "alias %s does not shadow a built-in preset name",
+      async (alias) => {
+        const names = (await listBuiltInPresets()).map((p) => p.name);
+        expect(names).not.toContain(alias);
+      },
+    );
+
+    it("resolves aliases case- and whitespace-insensitively", () => {
+      expect(resolvePresetName("  NextJS ")).toBe("nextjs-typescript");
+      expect(resolvePresetName("\tTURBO\n")).toBe("monorepo-turbo");
+      expect(resolvePresetName(" Python-FastAPI ")).toBe("python-fastapi");
     });
   });
 });
